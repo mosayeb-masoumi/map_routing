@@ -1,16 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/design_default_color_primary"
-    tools:context="com.mosayebmap.mapapplication.drawable.locations.presentation.LocationListFragment">
+    android:background="@color/design_default_color_primary">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+
+    <androidx.recyclerview.widget.RecyclerView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/txt"
-        android:text="@string/hello_blank_fragment" />
+        android:id="@+id/recyclerview"
+        android:layout_marginEnd="10dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="10dp"
+        tools:listitem="@layout/row"/>
 
-</FrameLayout>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:textSize="25sp"
+        android:visibility="gone"
+        android:id="@+id/txt_no_result"
+        android:text="@string/no_result"/>
+
+</RelativeLayout>

@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.mosayebmap.mapapplication.features.splash.SplashFragment">
+    tools:context="com.mosayebmaprouting.mapapplication.features.splash.SplashFragment">
 
     <!-- TODO: Update blank fragment layout -->
 

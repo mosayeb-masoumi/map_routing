@@ -8,5 +8,8 @@
     <string name="dialog_permission_button_positive">OK</string>
     <string name="need_location_permission">need location permission</string>
     <string name="turn_on_gps">Please turn on device GPS!!!</string>
+    <string name="address">address</string>
+    <string name="no_result">No Result !!!</string>
+    <string name="enter_destination">Please enter destination by click on map!!!</string>
 
 </resources>
