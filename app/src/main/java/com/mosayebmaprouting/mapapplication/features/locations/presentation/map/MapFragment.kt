@@ -1,7 +1,6 @@
 package com.mosayebmaprouting.mapapplication.features.locations.presentation.map
 
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.location.Geocoder
 import android.location.Location
@@ -23,7 +22,6 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 
@@ -100,11 +98,6 @@ class MapFragment : Fragment() , OnMapReadyCallback {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-
-//        val mapFragment = childFragmentManager.findFragmentById(R.id.map_view) as SupportMapFragment
-//        mapFragment.getMapAsync(this)
-
 
         binding.imgCurrentLocation.setOnClickListener {
             if (isLocationEnabled()) {
@@ -239,18 +232,31 @@ class MapFragment : Fragment() , OnMapReadyCallback {
         googleMap = map
 
         // Set up initial map settings and markers
-        val initialLatLng = LatLng(37.7749, -122.4194) // Example coordinates (San Francisco)
+        val initialLatLng = LatLng(35.7219, 51.3347) // Example coordinates (San Francisco)
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(initialLatLng, 12f))
 
+
+        googleMap.setOnMapLongClickListener {
+            addMarker(it)
+
+            // to get the location address
+            lifecycleScope.launch {
+                getAddressFromLatLng(it.latitude , it.longitude)
+            }
+
+        }
+//        addMarker(initialLatLng)
+    }
+
+
+    private fun addMarker(initialLatLng: LatLng) {
         val markerOptions = MarkerOptions()
             .position(initialLatLng)
-            .title("Marker Title")
-            .snippet("Marker Snippet")
+//            .title("Marker Title")
+//            .snippet("Marker Snippet")
         googleMap.addMarker(markerOptions)
     }
 
-//    private fun addUserMarker(currentLocation: LatLng, b: Boolean) {
-//
-//    }
+
 
 }
