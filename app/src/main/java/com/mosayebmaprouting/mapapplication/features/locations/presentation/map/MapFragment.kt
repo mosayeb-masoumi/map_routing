@@ -116,52 +116,19 @@ class MapFragment : Fragment() {
         RetrofitClientInstance.getRetrofitInstance().create(ReverseService::class.java)
 
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-
     }
 
     override fun onStart() {
         super.onStart()
-
         // move camera on tehran
         binding.map.moveCamera(LatLng(35.7219, 51.3347), .5f)
         binding.map.setZoom(10.5f, 1f)
-
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
-//        getCurrentLocation()
-    }
-
-    private fun getCurrentLocation() {
-
-        permissionManager
-            // Check one permission at a time
-            .request(Permission.Location)
-            .rationale("We need permission to see the map")
-            .checkPermission { granted ->
-                if (granted) {
-                    fusedLocationClient.lastLocation
-                        .addOnSuccessListener { location: Location? ->
-                            location?.let {
-                                val latitude = location.latitude
-                                val longitude = location.longitude
-
-                                currentLocation = LatLng(latitude, longitude)
-
-                                addUserMarker(currentLocation, true)
-                                binding.map.moveCamera(currentLocation, .5f)
-                                binding.map.setZoom(15f, 1f)
-                                // Use the latitude and longitude values as needed
-                            }
-                        }
-
-                } else {
-                    warningSnackbar("We couldn't access the location permission!!! try again.")
-//                    binding.btn.visibility = View.VISIBLE
-                }
-            }
+        onMapPolyline = null
+        latestMarker = null
+        currentmarker = null
     }
 
 
@@ -195,14 +162,17 @@ class MapFragment : Fragment() {
                 warningSnackbar(getString(R.string.turn_on_gps))
             }
 
-            // to clear the former route
+
             onMapPolyline?.let {
                 binding.map.removePolyline(onMapPolyline)
             }
+
+
         }
 
         binding.imgDirection.setOnClickListener {
-            latestMarker?.let {
+
+            if (latestMarker != null) {
                 neshanRoutingApi(currentmarker, latestMarker)
                 return@setOnClickListener
             }
@@ -212,7 +182,11 @@ class MapFragment : Fragment() {
         binding.imgSave.setOnClickListener {
 
             latestLocation?.let {
-                val location = LocationModel(latestLocation!!.latitude, latestLocation!!.longitude, markerAddress)
+                val location = LocationModel(
+                    latestLocation!!.latitude,
+                    latestLocation!!.longitude,
+                    markerAddress
+                )
                 addAddressToDB(location)
                 return@setOnClickListener
             }
@@ -319,6 +293,7 @@ class MapFragment : Fragment() {
                     ) {
 
                         // to clear the former route
+
                         onMapPolyline?.let {
                             binding.map.removePolyline(onMapPolyline)
                         }
@@ -347,7 +322,7 @@ class MapFragment : Fragment() {
                 }
 
                 override fun onFailure(call: Call<NeshanDirectionResult?>, t: Throwable) {
-                    var a = 5;
+                    var a = 5
                 }
             })
     }
@@ -419,7 +394,8 @@ class MapFragment : Fragment() {
                     }
 
                     it.data != null -> {
-                        Toast.makeText(context, "address saved successfully", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "address saved successfully", Toast.LENGTH_SHORT)
+                            .show()
                     }
                 }
             }
@@ -428,27 +404,55 @@ class MapFragment : Fragment() {
     }
 
 
-
-
-
-
-
-
     private fun getAddressFromNeshan(currentLocation: LatLng) {
-        getDataService.getReverse(currentLocation.latitude,currentLocation.longitude).enqueue(object : Callback<NeshanAddress> {
-            override fun onResponse(call: Call<NeshanAddress>, response: Response<NeshanAddress>) {
-                val address: String? = response.body()!!.address
-                if (address != null && !address.isEmpty()) {
-                    markerAddress = address
-                } else {
+        getDataService.getReverse(currentLocation.latitude, currentLocation.longitude)
+            .enqueue(object : Callback<NeshanAddress> {
+                override fun onResponse(
+                    call: Call<NeshanAddress>,
+                    response: Response<NeshanAddress>
+                ) {
+                    val address: String? = response.body()!!.address
+                    if (address != null && !address.isEmpty()) {
+                        markerAddress = address
+                    } else {
+                        markerAddress = "معبر بی‌نام"
+                    }
+                }
+
+                override fun onFailure(call: Call<NeshanAddress>, t: Throwable) {
                     markerAddress = "معبر بی‌نام"
                 }
-            }
+            })
+    }
 
-            override fun onFailure(call: Call<NeshanAddress>, t: Throwable) {
-                markerAddress = "معبر بی‌نام"
+    private fun getCurrentLocation() {
+
+        permissionManager
+            // Check one permission at a time
+            .request(Permission.Location)
+            .rationale("We need permission to see the map")
+            .checkPermission { granted ->
+                if (granted) {
+                    fusedLocationClient.lastLocation
+                        .addOnSuccessListener { location: Location? ->
+                            location?.let {
+                                val latitude = location.latitude
+                                val longitude = location.longitude
+
+                                currentLocation = LatLng(latitude, longitude)
+
+                                addUserMarker(currentLocation, true)
+                                binding.map.moveCamera(currentLocation, .5f)
+                                binding.map.setZoom(15f, 1f)
+                                // Use the latitude and longitude values as needed
+                            }
+                        }
+
+                } else {
+                    warningSnackbar("We couldn't access the location permission!!! try again.")
+//                    binding.btn.visibility = View.VISIBLE
+                }
             }
-        })
     }
 
 }
