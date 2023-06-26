@@ -1,5 +1,6 @@
 package com.mosayebmaprouting.mapapplication.features.locations.adapter
 
+import android.annotation.SuppressLint
 import androidx.recyclerview.widget.RecyclerView
 import com.mosayebmaprouting.mapapplication.R
 import com.mosayebmaprouting.mapapplication.databinding.RowBinding
@@ -7,6 +8,7 @@ import com.mosayebmaprouting.mapapplication.features.locations.domain.model.Loca
 
 class LocationViewHolder (private val binding: RowBinding): RecyclerView.ViewHolder(binding.root)  {
 
+    @SuppressLint("SetTextI18n")
     fun bind(model: LocationModel?) {
         model?.let{
             if(model.address.isEmpty()){
@@ -15,8 +17,8 @@ class LocationViewHolder (private val binding: RowBinding): RecyclerView.ViewHol
                 binding.txtAddress.text= model.address
             }
 
-            binding.txtLat.text = model.lat.toString()
-            binding.txtLng.text = model.lng.toString()
+            binding.txtLat.text = "lat: ${model.lat}"
+            binding.txtLng.text = "lng: ${model.lng}"
         }
 
 

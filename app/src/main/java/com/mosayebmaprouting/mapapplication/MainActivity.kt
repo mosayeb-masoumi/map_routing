@@ -3,7 +3,9 @@ package com.mosayebmaprouting.mapapplication
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.navigation.Navigation
+import androidx.navigation.fragment.findNavController
 import com.mosayebmaprouting.mapapplication.databinding.ActivityMainBinding
+import com.mosayebmaprouting.mapapplication.features.locations.presentation.locations.LocationListFragment
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

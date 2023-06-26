@@ -11,7 +11,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.annotation.ColorInt
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -24,16 +26,16 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.snackbar.Snackbar
+import com.mosayebmaprouting.mapapplication.R
 import com.mosayebmaprouting.mapapplication.core.Permission
 import com.mosayebmaprouting.mapapplication.core.PermissionManager
-import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import com.mosayebmaprouting.mapapplication.R
 import com.mosayebmaprouting.mapapplication.databinding.FragmentMapBinding
 import com.mosayebmaprouting.mapapplication.features.locations.domain.model.LocationModel
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.IOException
 
 
@@ -64,6 +66,16 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             latArgument = it.getDouble(ARG_PARAM1)
             lngArgument = it.getDouble(ARG_PARAM2)
         }
+
+        val callback: OnBackPressedCallback =
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    // Handle the back button event
+                    requireActivity().finish()
+                }
+            }
+        requireActivity().onBackPressedDispatcher.addCallback(this, callback)
+
     }
 
     override fun onCreateView(
@@ -96,7 +108,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         binding.btnSave.setOnClickListener {
 
-            if (::latestLocation.isInitialized) {
+            if (::googleMap.isInitialized && ::latestLocation.isInitialized) {
                 val location = LocationModel(
                     latestLocation.latitude,
                     latestLocation.longitude,
@@ -119,7 +131,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     private fun warningSnackbar(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT)
-            .withColor(Color.parseColor("#B00020"))
+            .withColor(ContextCompat.getColor(requireContext(), R.color.red))
             .show()
     }
 
@@ -195,8 +207,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                             location?.let {
                                 val latitude = location.latitude
                                 val longitude = location.longitude
-
-
                                 latestLocation = LatLng(latitude, longitude)
                                 addMarker(latestLocation)
                                 moveCameraToLocation(latestLocation, 16f)
@@ -244,21 +254,15 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     }
 
-
     private fun addMarker(initialLatLng: LatLng) {
         val markerOptions = MarkerOptions()
             .position(initialLatLng)
         googleMap.addMarker(markerOptions)
     }
 
-
     private fun moveCameraToLocation(latLng: LatLng, zoom: Float) {
         val cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, zoom)
         googleMap.animateCamera(cameraUpdate)
     }
-
-
-
-
 
 }
