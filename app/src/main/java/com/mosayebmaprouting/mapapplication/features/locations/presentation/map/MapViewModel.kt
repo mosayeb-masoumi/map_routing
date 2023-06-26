@@ -79,9 +79,9 @@ class MapViewModel @Inject constructor(private val useCase: LocationUseCases) : 
                 } else if (state.isNotEmpty() && city.isEmpty() && street.isEmpty()) {
                     buildAddress = state
                 } else if (state.isNotEmpty() && city.isNotEmpty() && street.isEmpty()) {
-                    buildAddress = "$state ,$city"
+                    buildAddress = "$state $city"
                 } else {
-                    buildAddress = "$state ,$city ,$street"
+                    buildAddress = "$state $city $street"
                 }
 
                 _getAddress.emit(buildAddress)

@@ -9,7 +9,10 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.Navigation
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.mosayebmaprouting.mapapplication.R
 import com.mosayebmaprouting.mapapplication.databinding.FragmentLocationListBinding
 import com.mosayebmaprouting.mapapplication.features.locations.adapter.LocationAdapter
 import com.mosayebmaprouting.mapapplication.features.locations.adapter.LocationItemInteraction
@@ -20,14 +23,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
-/**
- * A simple [Fragment] subclass.
- * Use the [LocationListFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
 @AndroidEntryPoint
 class LocationListFragment : Fragment(), LocationItemInteraction {
-
 
     private lateinit var binding: FragmentLocationListBinding
     private val viewModel by activityViewModels<LocationsViewModel>()
@@ -60,18 +57,16 @@ class LocationListFragment : Fragment(), LocationItemInteraction {
         lifecycleScope.launch {
             getNotesLiveData.collectLatest {
                 when {
-                    it.isLoading -> {
-
-                    }
-
+                    it.isLoading -> {}
                     it.data != null -> {
-                        setRecyClerView(it.data)
+                        if (it.data.isEmpty()) {
+                            binding.txtNoResult.visibility = View.VISIBLE
+                        } else {
+                            binding.txtNoResult.visibility = View.GONE
+                            setRecyClerView(it.data)
+                        }
                     }
-
-                    it.error != "" -> {
-
-                    }
-
+                    it.error != "" -> {}
                 }
             }
         }
@@ -86,55 +81,15 @@ class LocationListFragment : Fragment(), LocationItemInteraction {
     }
 
     override fun markerItemOnclick(location: LocationModel) {
-        TODO("Not yet implemented")
-    }
 
-    override fun deleteItemOnclick(location: LocationModel) {
-        deleteItem(location)
-    }
-
-    private fun deleteItem(location: LocationModel) {
-        viewModel.deleteLocation(location)
-        lifecycleScope.launch {
-            viewModel.deleteLocationResponse.collectLatest {
-                when {
-                    it.isLoading -> {
-                        Log.i("loading", "loading")
-                    }
-
-                    it.error != "" -> {
-                        Log.e("error", "an error occured")
-                    }
-
-                    it.data != null -> {
-                        Toast.makeText(context, "delete susccessfully", Toast.LENGTH_SHORT).show()
-                        getLocationsFromDb()
-                    }
-                }
-
-            }
+        val bundle = Bundle()
+        bundle.putDouble("lat", location.lat)
+        bundle.putDouble("lng", location.lng)
+        view?.let {
+            Navigation.findNavController(it)
+                .navigate(R.id.action_locationLostFragment_to_mapFragment, bundle)
         }
-
-        // when using liveData
-//        viewModel.deleteLocation().observe(viewLifecycleOwner){
-//            if(it !=null){
-//                when {
-//                    it.isLoading ->{
-//                        Log.i("loading", "loading")
-//                    }
-//
-//                    it.error !="" ->{
-//                        Log.e("error", "an error occured")
-//                    }
-//
-//                    it.data !=null ->{
-//                        Toast.makeText(context, "delete susccessfully", Toast.LENGTH_LONG)
-//                            .show()
-//                        getNotesFomDb()
-//                    }
-//                }
-//            }
-//        }
     }
+
 
 }

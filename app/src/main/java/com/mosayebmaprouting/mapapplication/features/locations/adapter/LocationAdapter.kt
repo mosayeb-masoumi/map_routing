@@ -23,6 +23,8 @@ class LocationAdapter @Inject constructor(): ListAdapter<LocationModel, Location
     }
 
     class MyDiffUtil: DiffUtil.ItemCallback<LocationModel>() {
+
+
         override fun areItemsTheSame(oldItem: LocationModel, newItem: LocationModel): Boolean {
             return oldItem.id == newItem.id
         }

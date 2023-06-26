@@ -11,5 +11,10 @@
     <string name="address">address</string>
     <string name="no_result">No Result !!!</string>
     <string name="enter_destination">Please enter destination by click on map!!!</string>
+    <string name="save_latest_location">Save Latest Location</string>
+    <string name="show_location_list">Show Location List</string>
+    <string name="no_address_found">No address found!</string>
+    <string name="latitude">latitude</string>
+    <string name="longitude">longitude</string>
 
 </resources>

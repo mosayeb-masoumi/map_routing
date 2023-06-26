@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/navigation_graph"
-    app:startDestination="@id/splashFragment">
+    app:startDestination="@id/mapFragment">
 
     <fragment
         android:id="@+id/mapFragment"
@@ -21,17 +21,9 @@
         tools:layout="@layout/fragment_location_list" >
         <action
             android:id="@+id/action_locationLostFragment_to_mapFragment"
+            app:popUpTo="@id/locationLostFragment"
+            app:popUpToInclusive="true"
             app:destination="@id/mapFragment" />
     </fragment>
-    <fragment
-        android:id="@+id/splashFragment"
-        android:name="com.mosayebmaprouting.mapapplication.features.splash.SplashFragment"
-        android:label="fragment_splash"
-        tools:layout="@layout/fragment_splash" >
-        <action
-            android:id="@+id/action_splashFragment_to_mapFragment"
-            app:destination="@id/mapFragment"
-            app:popUpTo="@id/splashFragment"
-            app:popUpToInclusive="true"/>
-    </fragment>
+
 </navigation>

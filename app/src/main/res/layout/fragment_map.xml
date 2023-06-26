@@ -15,29 +15,27 @@
         android:layout_height="match_parent" />
 
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:id="@+id/imgList"
-        android:padding="8dp"
+    <androidx.appcompat.widget.AppCompatButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/btnLocationList"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="15dp"
-        android:layout_marginBottom="108dp"
-        android:background="@drawable/rounded_shape"
-        app:srcCompat="@drawable/list_icon"/>
+        android:layout_toStartOf="@+id/btnSave"
+        android:layout_marginBottom="10dp"
+        android:textSize="11sp"
+        android:layout_marginEnd="10dp"
+        android:text="@string/show_location_list"/>
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:id="@+id/imgSave"
-        android:padding="8dp"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="15dp"
-        android:layout_marginBottom="60dp"
-        android:background="@drawable/rounded_shape"
-        app:srcCompat="@drawable/save_icon"/>
+<androidx.appcompat.widget.AppCompatButton
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:id="@+id/btnSave"
+    android:layout_alignParentBottom="true"
+    android:layout_toStartOf="@+id/imgCurrentLocation"
+    android:layout_marginBottom="10dp"
+    android:layout_marginEnd="10dp"
+    android:textSize="11sp"
+    android:text="@string/save_latest_location"/>
 
 
     <androidx.appcompat.widget.AppCompatImageView
