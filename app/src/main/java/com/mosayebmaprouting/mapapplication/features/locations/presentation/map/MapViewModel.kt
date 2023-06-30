@@ -1,15 +1,13 @@
 package com.mosayebmaprouting.mapapplication.features.locations.presentation.map
 
 
-import android.location.Address
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mosayebmaprouting.mapapplication.core.Resource
 import com.mosayebmaprouting.mapapplication.features.locations.domain.model.LocationModel
-import com.mosayebmaprouting.mapapplication.features.locations.domain.use_case.AddLocationUseCase
 import com.mosayebmaprouting.mapapplication.features.locations.domain.use_case.LocationUseCases
+import com.mosayebmaprouting.mapapplication.features.locations.domain.use_case.NeshanDirectionUseCase
+import com.mosayebmaprouting.mapapplication.features.locations.domain.use_case.NeshanUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,26 +15,28 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
+import org.neshan.common.model.LatLng
+import org.neshan.mapsdk.model.Marker
 import javax.inject.Inject
 
 @HiltViewModel
-class MapViewModel @Inject constructor(private val useCase: LocationUseCases) : ViewModel() {
+class MapViewModel @Inject constructor(
+    private val useCase: LocationUseCases,
+    private val neshanUseCase: NeshanUseCase,
+    private val neshanDirectionUseCase: NeshanDirectionUseCase
+) : ViewModel() {
 
 
     private val _saveLocationResponse = MutableSharedFlow<SaveLocationState>()
     val saveLocationResponse = _saveLocationResponse.asSharedFlow()
 
 
-    // a good replacement for liveData keeps the latest value and here we can have operators like filter , map and so on
-//    private val _getAddress = MutableStateFlow("")
-//    val getAddress = _getAddress.asStateFlow()
-
-    lateinit var buildAddress: String
-
-    //
-    private val _getAddress = MutableSharedFlow<String>()
+    private val _getAddress = MutableSharedFlow<NeshanAddressState>()
     val getAddress = _getAddress.asSharedFlow()
+
+
+    private val _getDirection = MutableStateFlow(NeshanDirectionState())
+    val getDirection = _getDirection.asStateFlow()
 
 
     fun saveLocation(location: LocationModel) {
@@ -66,29 +66,44 @@ class MapViewModel @Inject constructor(private val useCase: LocationUseCases) : 
 
     }
 
-    fun createAdress(address: Address?) {
-        address?.let {
 
-            viewModelScope.launch {
-                val state = address.adminArea ?: ""// Get the state
-                val city = address.locality ?: "" // Get the city
-                val street = address.thoroughfare ?: ""// Get the street address
+    fun getAddress(loc: LatLng) {
 
-                if (state.isEmpty() && city.isEmpty() && street.isEmpty()) {
-                    buildAddress = ""
-                } else if (state.isNotEmpty() && city.isEmpty() && street.isEmpty()) {
-                    buildAddress = state
-                } else if (state.isNotEmpty() && city.isNotEmpty() && street.isEmpty()) {
-                    buildAddress = "$state ,$city"
-                } else {
-                    buildAddress = "$state ,$city ,$street"
+        neshanUseCase(loc).onEach {
+            when (it) {
+                is Resource.Loading -> {
+                    _getAddress.emit(NeshanAddressState(isLoading = true))
                 }
 
-                _getAddress.emit(buildAddress)
+                is Resource.Success -> {
+                    _getAddress.emit(NeshanAddressState(data = it.data))
+                }
+
+                is Resource.Error -> {
+                    _getAddress.emit(NeshanAddressState(error = "an error occurred!!"))
+                }
             }
-        }
+        }.launchIn(viewModelScope)
 
     }
 
+    fun getDirection(firstMarker: Marker?, secondMarker: Marker?) {
+
+        neshanDirectionUseCase(firstMarker!!, secondMarker!!).onEach {
+            when (it) {
+                is Resource.Loading -> {
+                    _getDirection.value = NeshanDirectionState(isLoading = true)
+                }
+
+                is Resource.Success -> {
+                    _getDirection.value = NeshanDirectionState(data = it.data)
+                }
+
+                is Resource.Error -> {
+                    _getDirection.value = NeshanDirectionState(error = "an error occurred!!")
+                }
+            }
+        }.launchIn(viewModelScope)
+    }
 
 }

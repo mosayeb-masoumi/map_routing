@@ -3,7 +3,6 @@ package com.mosayebmaprouting.mapapplication.features.locations.presentation.map
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
 import android.os.Bundle
@@ -22,11 +21,7 @@ import com.carto.styles.AnimationStyleBuilder
 import com.carto.styles.AnimationType
 import com.carto.styles.MarkerStyleBuilder
 import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.LocationSettingsRequest
-import com.google.android.gms.location.SettingsClient
 
 import com.google.android.material.snackbar.Snackbar
 
@@ -47,16 +42,15 @@ import org.neshan.servicessdk.direction.model.Route
 import com.carto.styles.*
 import com.mosayebmaprouting.mapapplication.R
 import com.mosayebmaprouting.mapapplication.databinding.FragmentMapBinding
+import com.mosayebmaprouting.mapapplication.features.locations.data.data_source.NeshanService
 import com.mosayebmaprouting.mapapplication.features.locations.domain.model.LocationModel
 import com.mosayebmaprouting.mapapplication.features.locations.domain.model.NeshanAddress
-import com.mosayebmaprouting.mapapplication.network.ReverseService
 import kotlinx.coroutines.flow.collectLatest
 import org.neshan.common.network.RetrofitClientInstance
 
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.io.IOException
 
 
 @AndroidEntryPoint
@@ -69,28 +63,28 @@ class MapFragment : Fragment() {
 
 
     // User's current location
-    private var userLocation: Location? = null
+//    private var userLocation: Location? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var settingsClient: SettingsClient
-    private lateinit var locationRequest: LocationRequest
-    private var locationSettingsRequest: LocationSettingsRequest? = null
-    private var locationCallback: LocationCallback? = null
-    private var lastUpdateTime: String? = null
+//    private lateinit var settingsClient: SettingsClient
+//    private lateinit var locationRequest: LocationRequest
+//    private var locationSettingsRequest: LocationSettingsRequest? = null
+//    private var locationCallback: LocationCallback? = null
+//    private var lastUpdateTime: String? = null
 
-    private val REQUEST_CODE = 123
-    private val UPDATE_INTERVAL_IN_MILLISECONDS: Long = 1000
-    private val FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS: Long = 1000
 
     // boolean flag to toggle the ui
     private var mRequestingLocationUpdates: Boolean? = null
-    private var latestMarker: Marker? = null
-    private var currentmarker: Marker? = null
+//    private var currentMarker: Marker? = null
+//    private var formerMarker: Marker? = null
 
     private val permissionManager = PermissionManager.from(this)
 
 
-    private lateinit var currentLocation: LatLng
-    private var latestLocation: LatLng? = null
+//    private lateinit var currentLocation: LatLng
+//    private var latestLocation: LatLng? = null
+
+    private var formerLocation: LatLng? = null
+    private var currentLocation: LatLng? = null
 
 
     // we save decoded Response of routing encoded string because we don't want request every time we clicked toggle buttons
@@ -100,11 +94,12 @@ class MapFragment : Fragment() {
     // value for difference mapSetZoom
     private var overview = false
 
-    // Marker that will be added on map
-    private lateinit var marker: Marker
+
+    private var markerList: ArrayList<Marker> = ArrayList()
+
 
     // List of created markers
-    private val markers: ArrayList<Marker> = ArrayList()
+//    private val markers: ArrayList<Marker> = ArrayList()
 
     // drawn path of route
     private var onMapPolyline: Polyline? = null
@@ -112,8 +107,8 @@ class MapFragment : Fragment() {
 
     private var markerAddress = ""
 
-    private val getDataService: ReverseService =
-        RetrofitClientInstance.getRetrofitInstance().create(ReverseService::class.java)
+    private val getDataService: NeshanService =
+        RetrofitClientInstance.getRetrofitInstance().create(NeshanService::class.java)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -126,9 +121,19 @@ class MapFragment : Fragment() {
         binding.map.moveCamera(LatLng(35.7219, 51.3347), .5f)
         binding.map.setZoom(10.5f, 1f)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
+
+
+        clearMap()
+
+    }
+
+    private fun clearMap() {
         onMapPolyline = null
-        latestMarker = null
-        currentmarker = null
+//        currentMarker = null
+//        formerMarker = null
+        currentLocation = null
+        formerLocation = null
+        binding.map.clearMarkers()
     }
 
 
@@ -146,13 +151,9 @@ class MapFragment : Fragment() {
 
         // when long clicked on map, a marker is added in clicked location
         binding.map.setOnMapLongClickListener {
-            val loc = LatLng(it.latitude, it.longitude)
-            addUserMarker(loc, false)
 
-            lifecycleScope.launch {
-//                getAddressFromLatLng(it.latitude, it.longitude)  // get address from google
-                getAddressFromNeshan(loc)      // get address from neshan
-            }
+            showMarker(it)
+
         }
 
         binding.imgCurrentLocation.setOnClickListener {
@@ -172,8 +173,9 @@ class MapFragment : Fragment() {
 
         binding.imgDirection.setOnClickListener {
 
-            if (latestMarker != null) {
-                neshanRoutingApi(currentmarker, latestMarker)
+            if (markerList.size >= 2) {
+                neshanRoutingApi(markerList[0], markerList[1])
+//                neshanRoutingApiClean(markerList[0], markerList[1])
                 return@setOnClickListener
             }
             warningSnackbar(getString(R.string.enter_destination))
@@ -181,10 +183,10 @@ class MapFragment : Fragment() {
 
         binding.imgSave.setOnClickListener {
 
-            latestLocation?.let {
+            currentLocation?.let {
                 val location = LocationModel(
-                    latestLocation!!.latitude,
-                    latestLocation!!.longitude,
+                    currentLocation!!.latitude,
+                    currentLocation!!.longitude,
                     markerAddress
                 )
                 addAddressToDB(location)
@@ -200,7 +202,30 @@ class MapFragment : Fragment() {
     }
 
 
-    private fun addUserMarker(loc: LatLng, isUserCurrentLocation: Boolean) {
+    private fun showMarker(loc: LatLng) {
+
+        onMapPolyline?.let {
+            binding.map.removePolyline(onMapPolyline)
+        }
+
+        if (markerList.isNotEmpty() && markerList.size >= 2) {
+            binding.map.removeMarker(markerList[0])  //remove from map
+            markerList.remove(markerList[0])   // remove from list
+        }
+
+        currentLocation = LatLng(loc.latitude, loc.longitude)
+        addUserMarker(currentLocation!!)
+
+        lifecycleScope.launch {
+//            getAddressFromNeshan(currentLocation!!)      // get address from neshan
+            getAddress(currentLocation!!)
+        }
+    }
+
+
+
+
+    private fun addUserMarker(loc: LatLng) {
 
         // AnimationStyle
         val animStBl = AnimationStyleBuilder()
@@ -221,30 +246,11 @@ class MapFragment : Fragment() {
         markStCr.animationStyle = animSt
         val markSt = markStCr.buildStyle()
 
-        if (isUserCurrentLocation) {
-            currentmarker?.let {
-                binding.map.removeMarker(currentmarker)
-            }
-            currentmarker = Marker(loc, markSt)
-            binding.map.addMarker(currentmarker)
+        val currentMarker = Marker(loc, markSt)
+        binding.map.addMarker(currentMarker)
+        markerList.add(currentMarker)
 
-            latestMarker?.let {
-                showDirectionButton()
-            }
 
-        } else {
-            //remove latestMarker marker from map
-            latestMarker?.let {
-                binding.map.removeMarker(latestMarker)
-            }
-            latestMarker = Marker(loc, markSt)
-            binding.map.addMarker(latestMarker)
-            latestLocation = loc
-
-            currentmarker?.let {
-                showDirectionButton()
-            }
-        }
     }
 
     private fun showDirectionButton() {
@@ -275,11 +281,39 @@ class MapFragment : Fragment() {
         )
     }
 
-    private fun neshanRoutingApi(currentmarker: Marker?, latestMarker: Marker?) {
+
+    private fun neshanRoutingApiClean(firstMarker: Marker?, secondMarker: Marker?) {
+
+        viewModel.getDirection(firstMarker , secondMarker)
+        // wait for observing
+        val direction = viewModel.getDirection
+        lifecycleScope.launch {
+            direction.collectLatest {
+                when {
+                    it.isLoading -> {
+                        Log.i("loading", "loading")
+                    }
+
+                    it.error != "" -> {
+                        markerAddress = "مسیری یافت نشد!"
+                    }
+
+                    it.data != null -> {
+                        var route = it.data.routes
+                    }
+                }
+            }
+        }
+
+    }
+
+
+
+    private fun neshanRoutingApi(firstMarker: Marker?, secondMarker: Marker?) {
         NeshanDirection.Builder(
             "service.1086dbd8409845568a76f21114606dae",
-            currentmarker!!.latLng,
-            latestMarker!!.latLng
+            firstMarker!!.latLng,
+            secondMarker!!.latLng
         )
             .build().call(object : Callback<NeshanDirectionResult?> {
                 override fun onResponse(
@@ -327,8 +361,7 @@ class MapFragment : Fragment() {
             })
     }
 
-    // In this method we create a LineStyleCreator, set its features and call buildStyle() method
-    // on it and return the LineStyle object (the same routine as crating a marker style)
+
     private fun getLineStyle(): LineStyle {
         val lineStCr = LineStyleBuilder()
         lineStCr.color = com.carto.graphics.Color(
@@ -343,38 +376,16 @@ class MapFragment : Fragment() {
     // for overview routing we zoom out and review hole route and for stepByStep routing we just zoom to first marker position
     private fun mapSetPosition(overview: Boolean) {
 
-//        markers[0] = currentmarker;
-//        markers[1] = latestMarker;
-
-        val centerFirstMarkerX = currentmarker!!.latLng.latitude
-        val centerFirstMarkerY = currentmarker!!.latLng.longitude
+        val centerFirstMarkerX = markerList[0].latLng.latitude
+        val centerFirstMarkerY = markerList[0].latLng.longitude
         if (overview) {
-            val centerFocalPositionX = (centerFirstMarkerX + latestMarker!!.latLng.latitude) / 2
-            val centerFocalPositionY = (centerFirstMarkerY + latestMarker!!.latLng.longitude) / 2
+            val centerFocalPositionX = (centerFirstMarkerX + markerList[1].latLng.latitude) / 2
+            val centerFocalPositionY = (centerFirstMarkerY + markerList[1].latLng.longitude) / 2
             binding.map.moveCamera(LatLng(centerFocalPositionX, centerFocalPositionY), 0.5f)
             binding.map.setZoom(14f, 0.5f)
         } else {
             binding.map.moveCamera(LatLng(centerFirstMarkerX, centerFirstMarkerY), 0.5f)
             binding.map.setZoom(14f, 0.5f)
-        }
-    }
-
-    suspend fun getAddressFromLatLng(latitude: Double, longitude: Double) {
-        return withContext(Dispatchers.IO) {
-            val geocoder = Geocoder(requireContext())
-            try {
-                val addresses = geocoder.getFromLocation(latitude, longitude, 1)
-                if (!addresses.isNullOrEmpty()) {
-
-                    viewModel.createAdress(addresses[0])
-                    viewModel.getAddress.collectLatest {
-                        markerAddress = it
-                    }
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                markerAddress = ""
-            }
         }
     }
 
@@ -403,26 +414,50 @@ class MapFragment : Fragment() {
 
     }
 
+//    private fun getAddressFromNeshan(currentLocation: LatLng) {
+//        getDataService.getReverse(currentLocation.latitude, currentLocation.longitude)
+//            .enqueue(object : Callback<NeshanAddress> {
+//                override fun onResponse(
+//                    call: Call<NeshanAddress>,
+//                    response: Response<NeshanAddress>
+//                ) {
+//                    val address: String? = response.body()!!.address
+//                    if (address != null && !address.isEmpty()) {
+//                        markerAddress = address
+//                    } else {
+//                        markerAddress = "معبر بی‌نام"
+//                    }
+//                }
+//
+//                override fun onFailure(call: Call<NeshanAddress>, t: Throwable) {
+//                    markerAddress = "معبر بی‌نام"
+//                }
+//            })
+//    }
 
-    private fun getAddressFromNeshan(currentLocation: LatLng) {
-        getDataService.getReverse(currentLocation.latitude, currentLocation.longitude)
-            .enqueue(object : Callback<NeshanAddress> {
-                override fun onResponse(
-                    call: Call<NeshanAddress>,
-                    response: Response<NeshanAddress>
-                ) {
-                    val address: String? = response.body()!!.address
-                    if (address != null && !address.isEmpty()) {
-                        markerAddress = address
-                    } else {
+    private fun getAddress(location: LatLng) {
+
+        viewModel.getAddress(location)
+        // wait for observing
+        val address = viewModel.getAddress
+        lifecycleScope.launch {
+            address.collectLatest {
+                when {
+                    it.isLoading -> {
+                        Log.i("loading", "loading")
+                    }
+
+                    it.error != "" -> {
                         markerAddress = "معبر بی‌نام"
                     }
-                }
 
-                override fun onFailure(call: Call<NeshanAddress>, t: Throwable) {
-                    markerAddress = "معبر بی‌نام"
+                    it.data != null -> {
+                        markerAddress = it.data.address!!
+                    }
                 }
-            })
+            }
+        }
+
     }
 
     private fun getCurrentLocation() {
@@ -438,19 +473,13 @@ class MapFragment : Fragment() {
                             location?.let {
                                 val latitude = location.latitude
                                 val longitude = location.longitude
-
-                                currentLocation = LatLng(latitude, longitude)
-
-                                addUserMarker(currentLocation, true)
+                                showMarker(LatLng(latitude, longitude))
                                 binding.map.moveCamera(currentLocation, .5f)
                                 binding.map.setZoom(15f, 1f)
-                                // Use the latitude and longitude values as needed
                             }
                         }
-
                 } else {
                     warningSnackbar("We couldn't access the location permission!!! try again.")
-//                    binding.btn.visibility = View.VISIBLE
                 }
             }
     }
